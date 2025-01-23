@@ -1,0 +1,39 @@
+### Build and publish image on release
+### 1. Create a PAT on your account in https://github.com/settings/tokens/new?scopes=write:packages
+### 2. Create an Github Actions secrets named "GHCR_TOKEN" with previously generated PAT as its content
+### 3. Create a release and check if this Action is running
+---
+name: "Build and Publish Image on Release"
+
+on:
+    release:
+        types:
+            - published
+
+jobs:
+    build-publish-manifest:
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+            - name: "Login to Github Container Registry"
+              run: |
+                    echo "${{ secrets.GHCR_TOKEN }}" | docker login -u ${{ github.actor }} --password-stdin ghcr.io
+            - name: "Building Manifest"
+              run: |
+                    RELEASE="$(echo "${{ github.ref }}" | rev | cut -d/ -f1 | rev)"
+                    REPO_URL="https://$(git remote get-url --push origin | cut -d@ -f2 | sed 's/:/\//')"
+                    TAG_PRE="$(echo "ghcr.io/${{ github.repository_owner }}/etcd-browser" | tr [:upper:] [:lower:])"
+
+                    docker build . \
+                        --label "org.opencontainers.image.source=${REPO_URL}" \
+                        --label "org.opencontainers.image.url=${REPO_URL}" \
+                        --label "org.opencontainers.image.created=$(date -Iseconds)" \
+                        --label "org.opencontainers.image.version=${RELEASE}" \
+                        --tag ${TAG_PRE}:latest \
+                        --tag ${TAG_PRE}:${RELEASE}
+            - name: "Publishing Manifest Image and Tags"
+              run: |
+                TAG_PRE="$(echo "ghcr.io/${{ github.repository_owner }}/etcd-browser" | tr [:upper:] [:lower:])"
+                docker push -a ${TAG_PRE}
