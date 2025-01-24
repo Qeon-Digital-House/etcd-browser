@@ -47,7 +47,7 @@ http.createServer(function serverFile(req, res) {
     // authenticaton
     if (!auth(req, res)) {
         res.statusCode = 401;
-        res.setHeader('WWW-Authenticate', 'Basic realm="MyRealmName"');
+        res.setHeader('WWW-Authenticate', 'Basic realm="etcd-browser"');
         res.end('Unauthorized');
         return;
     }
@@ -57,20 +57,30 @@ http.createServer(function serverFile(req, res) {
     } else if (req.url.substr(0, 3) === '/v2') {
         // avoid fileExists for /v2 routes
         return proxy(req, res);
+    } else {
+        var uri = url.parse(req.url).pathname;
+        var filename = path.join(process.cwd(), publicDir, path.normalize(uri));
+
+        fs.exists(filename, function (exists) {
+            // returns 404 if file does not exist.
+            if (!exists) {
+                res.writeHead(404, {"Content-Type": 'text/html'});
+                res.end("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested file is not found on this server.</p></body></html>");
+                return;
+            }
+
+            fs_ext = path.extname(filename).split(".")[1];
+            if (!mimeTypes[fs_ext]) { // raise 404 if ext not supported.
+                res.writeHead(404, {"Content-Type": 'text/html'});
+                res.end("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested file is not found on this server.</p></body></html>");
+                return;
+            }
+
+            // serve static file if exists and supported.
+            res.writeHead(200, mimeTypes[fs_ext]);
+            fs.createReadStream(filename).pipe(res);
+        });
     }
-
-    var uri = url.parse(req.url).pathname;
-    var filename = path.join(process.cwd(), publicDir, uri);
-
-    fs.exists(filename, function (exists) {
-        // proxy if file does not exist
-        if (!exists)
-            return proxy(req, res);
-
-        // serve static file if exists
-        res.writeHead(200, mimeTypes[path.extname(filename).split(".")[1]]);
-        fs.createReadStream(filename).pipe(res);
-    });
 }).listen(serverPort, function () {
     console.log('proxy /api requests to etcd on ' + etcdHost + ':' + etcdPort);
     console.log('etc-browser listening on port ' + serverPort);
