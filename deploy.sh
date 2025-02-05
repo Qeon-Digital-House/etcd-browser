@@ -13,10 +13,11 @@ for _PT in $PATH_REQS; do
 done
 
 NODE_ADDR="$1"
+ACTION="$2"
 
 if [ -z "${NODE_ADDR}" ]; then
     >&2 echo "E: Missing node address."
-    echo "Usage: $0 <node_address>"
+    echo "Usage: $0 <node_address> <up|down>"
     exit 1
 fi
 
@@ -58,5 +59,9 @@ fi
 # export variables.
 export IMAGE_REGISTRY LATEST_VER NODE_ADDR ETCD_BROWSER_IMAGE
 
-# compose up!
-docker compose up -d
+# compose up/down!
+if [ "$2" == "down" ]; then
+    docker compose down
+else
+    docker compose up -d
+fi
