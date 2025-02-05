@@ -6,19 +6,22 @@ services:
       - "2380:2380"
     volumes:
       - etcd-data:/var/etcd
+    restart: unless-stopped
     environment:
       ETCD_DATA_DIR: "/var/etcd"
       ETCD_NAME: etcd
+      ETCD_ENABLE_V2: "true"
     command: [ "/usr/local/bin/etcd",
       "--initial-advertise-peer-urls", "http://${NODE_ADDR}:2380",
       "--listen-peer-urls", "http://0.0.0.0:2380",
-      "--adversite-client-urls", "http://{$NODE_ADDR}:2379",
+      "--advertise-client-urls", "http://${NODE_ADDR}:2379",
       "--listen-client-urls", "http://0.0.0.0:2379",
       "--initial-cluster", "etcd=http://${NODE_ADDR}:2380" ]
   browser:
     image: ${ETCD_BROWSER_IMAGE}
     ports:
       - "8000:8000"
+    restart: unless-stopped
     environment:
       AUTH_USER: admin
       AUTH_PASS: admin
