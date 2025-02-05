@@ -16,7 +16,7 @@ services:
       "--listen-client-urls", "http://0.0.0.0:2379",
       "--initial-cluster", "etcd=http://${NODE_ADDR}:2380" ]
   browser:
-    image: etcd-browser:latest
+    image: ${ETCD_BROWSER_IMAGE}
     ports:
       - "8000:8000"
     environment:
