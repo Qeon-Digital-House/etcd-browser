@@ -23,7 +23,7 @@ jobs:
             - name: "Building Manifest"
               run: |
                     RELEASE="$(echo "${{ github.ref }}" | rev | cut -d/ -f1 | rev)"
-                    REPO_URL="https://$(git remote get-url --push origin | cut -d@ -f2 | sed 's/:/\//')"
+                    REPO_URL="$(git remote get-url --push origin)"
                     TAG_PRE="$(echo "ghcr.io/${{ github.repository_owner }}/etcd-browser" | tr [:upper:] [:lower:])"
 
                     docker build . \
