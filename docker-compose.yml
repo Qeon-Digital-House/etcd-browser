@@ -1,0 +1,28 @@
+services:
+  etcd:
+    image: ${IMAGE_REGISTRY}:${LATEST_VER}
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - etcd-data:/var/etcd
+    environment:
+      ETCD_DATA_DIR: "/var/etcd"
+      ETCD_NAME: etcd
+    command: [ "/usr/local/bin/etcd",
+      "--initial-advertise-peer-urls", "http://${NODE_ADDR}:2380",
+      "--listen-peer-urls", "http://0.0.0.0:2380",
+      "--adversite-client-urls", "http://{$NODE_ADDR}:2379",
+      "--listen-client-urls", "http://0.0.0.0:2379",
+      "--initial-cluster", "etcd=http://${NODE_ADDR}:2380" ]
+  browser:
+    image: etcd-browser:latest
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_USER: admin
+      AUTH_PASS: admin
+      ETCD_HOST: ${NODE_ADDR}
+      ETCD_PORT: 2379
+volumes:
+  etcd-data:
